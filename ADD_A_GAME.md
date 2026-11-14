@@ -51,7 +51,7 @@ edit the source and confirm the Pages deploy actually updated.
    ```
    Rules (enforced by `tools/discover.mjs`): slug = lowercase letters, digits, dashes (max 40) and unique;
    1–6 tags of ≤ 20 chars; controls = strings, `"Action: keys"` renders the action in bold; platforms ⊆
-   `desktop`, `mobile` (list `mobile` only if it was really checked on a phone); URLs absolute https;
+   `desktop`, `mobile` (list `mobile` only if the game has working touch controls that were tested, at least in touch emulation); URLs absolute https;
    `repo` must be this repo; `color` optional. Check it from the hub repo with
    `node tools/discover.mjs --validate ../<Repo>/game.json`.
    If the game has a build step, make sure the build copies `game.json`, `manifest.webmanifest`, `assets/banner.jpg`
