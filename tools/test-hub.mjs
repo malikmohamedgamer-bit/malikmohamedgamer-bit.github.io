@@ -41,7 +41,7 @@ const emuConfig = `export const firebaseConfig = ${JSON.stringify({ apiKey: 'dem
 const server = LIVE ? null : await start(PORT, { games: true });
 const browser = await chromium.launch({ channel: 'msedge' });
 
-async function newCtx({ width, height, theme = 'dark', stats = emulatorUp, shareApi = false, mobile = false, persistent = false } = {}) {
+async function newCtx({ width, height, theme = 'dark', stats = emulatorUp, shareApi = false, mobile = false, persistent = false, bot = false } = {}) {
   // the hub's service worker answers /games.json itself (bypassing the fixture route), so only the PWA test allows it
   const opts = { viewport: { width, height }, colorScheme: theme, isMobile: mobile, hasTouch: mobile, deviceScaleFactor: mobile ? 2 : 1, serviceWorkers: persistent || LIVE ? 'allow' : 'block' };
   // installability needs a real (non-incognito) profile
@@ -55,6 +55,8 @@ async function newCtx({ width, height, theme = 'dark', stats = emulatorUp, share
       return g ? r.fulfill({ contentType: 'text/html', body: sharePage(g) }) : r.fallback();
     });
   }
+  // the SDK ignores automated browsers; on the emulator, look like a real one so plays and presence are exercised
+  if (stats && !LIVE && !bot) await ctx.addInitScript(() => { Object.defineProperty(Navigator.prototype, 'webdriver', { get: () => false }); });
   if (!shareApi) await ctx.addInitScript(() => { try { delete Navigator.prototype.share; delete Navigator.prototype.canShare; } catch { /* ignore */ } });
   return ctx;
 }
@@ -79,7 +81,7 @@ async function suite(size) {
   const slugs = await rowsOf(page);
   check(`${label}: list renders from games.json`, slugs.length === (LIVE ? slugs.length : 4) && slugs.length > 0, slugs.join(', '));
   check(`${label}: no horizontal scroll`, await noHScroll(page));
-  if (emulatorUp) { await waitStats(page); check(`${label}: live stats show numbers`, /\d/.test(await page.textContent('.row .n-plays'))); }
+  if (emulatorUp || (LIVE && !args.includes('--no-stats'))) { await waitStats(page); check(`${label}: live stats show numbers`, /\d/.test(await page.textContent('.row .n-plays'))); }
   else if (!LIVE) { await page.waitForTimeout(1500); check(`${label}: stats unavailable show —`, (await page.textContent('#total-online')).trim() === '—' && (await page.textContent('.row .n-plays')).trim() === '—'); }
 
   // search
@@ -278,6 +280,18 @@ async function sdk() {
     }
     check(`no console errors on the game page (${standalone ? 'standalone' : 'tab'})`, errors.length === 0, errors.join(' | '));
     await ctx.close();
+  }
+  if (emulatorUp) { // an automated browser (navigator.webdriver) never counts
+    const emu = (p) => fetch(`http://127.0.0.1:9000/${p}.json?ns=demo-gamehub-default-rtdb`).then((r) => r.json());
+    const before = await emu('stats/bolt-skate/plays');
+    const bctx = await newCtx({ width: 1000, height: 700, bot: true });
+    const bot = await bctx.newPage();
+    await bot.goto(`${BASE}/Skate-game/`, { waitUntil: 'load' });
+    await bot.waitForTimeout(5000);
+    const local = await bot.evaluate(() => ({ recent: JSON.parse(localStorage.getItem('hub.recent') || '{}'), last: JSON.parse(localStorage.getItem('hub.lastPlay') || '{}') }));
+    const presence = await emu('presence/bolt-skate');
+    check('a bot visit counts no play and no presence', !!local.recent['bolt-skate'] && !local.last['bolt-skate'] && (await emu('stats/bolt-skate/plays')) === before && !presence, JSON.stringify({ before, presence, local }));
+    await bctx.close();
   }
   if (emulatorUp) { // presence + play counted, seen from the hub
     const gctx = await newCtx({ width: 1000, height: 700 });

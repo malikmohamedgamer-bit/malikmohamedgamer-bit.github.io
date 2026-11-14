@@ -80,6 +80,7 @@
     var recent = store('hub.recent', {});
     recent[slug] = Date.now();
     save('hub.recent', recent); // the hub's "Recently played" tab (same origin)
+    if (navigator.webdriver) return Promise.resolve(); // bots, crawlers and test runs never count as plays or players
     return import('/js/stats.js').then(function (m) { return m.connect(); }).then(function (backend) {
       if (!backend) return;
       var stop = backend.startPresence(slug);

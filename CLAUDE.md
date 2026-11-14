@@ -8,7 +8,8 @@ Read `README.md` (architecture, data model, discovery) before changing anything.
 - `site/sw.js` must only `respondWith()` for the allow-listed hub paths. Never cache or intercept game URLs.
 - `hub-sdk.js` runs inside every game: it must never throw, block, slow start-up or take input. Keep it a
   classic script; Firebase loads only after `load`.
-- Never show fake or seeded numbers: when stats are unavailable the UI shows "—".
+- Never show fake or seeded numbers: when stats are unavailable the UI shows "—". Automated browsers
+  (`navigator.webdriver`) never count plays or presence, so live test runs leave the real numbers alone.
 - Firebase web config is public (fine to commit). Never commit service-account keys, tokens or `.firebase/`.
 - Mobile first: 16 px gutters, 44 px tap targets, no horizontal scroll, visible focus, reduced motion honoured.
 - Game links are plain same-origin links (no `target="_blank"`); other origins go through `/play/?g=<slug>`.
