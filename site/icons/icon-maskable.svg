@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0B2A33"/><stop offset="1" stop-color="#04090D"/></linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.4" r="0.62"><stop offset="0" stop-color="#22D3EE" stop-opacity="0.5"/><stop offset="1" stop-color="#22D3EE" stop-opacity="0"/></radialGradient>
+    <linearGradient id="em" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C8F7FF"/><stop offset="1" stop-color="#22D3EE"/></linearGradient>
+    <linearGradient id="ac" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#9FEFFF"/></linearGradient>
+    <linearGradient id="ink" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0B2A33"/><stop offset="1" stop-color="#04090D"/></linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.16"/><stop offset="0.45" stop-color="#FFFFFF" stop-opacity="0"/></linearGradient>
+    <filter id="shadow" x="-25%" y="-25%" width="150%" height="150%"><feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#000000" flood-opacity="0.55"/></filter>
+  </defs>
+  <rect x="0" y="0" width="512" height="512" rx="0" fill="url(#bg)"/>
+  <rect x="0" y="0" width="512" height="512" rx="0" fill="url(#glow)"/>
+  <g filter="url(#shadow)" transform="translate(71.68 71.68) scale(0.72)"><g transform="translate(256 256) scale(0.78) translate(-256 -290)">
+      <path fill="url(#em)" d="M168 168h176c58 0 92 34 104 92l16 74c10 46-14 78-50 78-24 0-40-14-54-36l-22-34H174l-22 34c-14 22-30 36-54 36-36 0-60-32-50-78l16-74c12-58 46-92 104-92z"/>
+      <rect x="150" y="226" width="30" height="94" rx="8" fill="url(#ink)"/>
+      <rect x="118" y="258" width="94" height="30" rx="8" fill="url(#ink)"/>
+      <circle cx="344" cy="246" r="21" fill="url(#ac)"/>
+      <circle cx="388" cy="290" r="21" fill="url(#ac)"/>
+      <circle cx="300" cy="290" r="21" fill="url(#ac)"/>
+      <circle cx="344" cy="334" r="21" fill="url(#ac)"/>
+  </g></g>
+  <rect x="0" y="0" width="512" height="512" rx="0" fill="url(#sheen)"/>
+</svg>

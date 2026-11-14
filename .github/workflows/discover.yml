@@ -1,0 +1,66 @@
+name: Discover games and deploy
+
+# Lists public repos with the topic `hub-game`, validates each deployed game.json, regenerates
+# site/games.json and site/g/<slug>/ (committed only when something changed), then deploys site/ to Pages.
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '23 5 * * *'   # daily
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.commit.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Discover hub-game repos
+        run: node tools/discover.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Commit generated files if they changed
+        id: commit
+        run: |
+          git add site/games.json site/g
+          if git diff --cached --quiet; then
+            echo "No changes to games.json or share pages"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "Discover: update games.json and share pages"
+            git push
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Build the site (stamps the service worker cache version)
+        run: node tools/build.mjs _site
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    # every push and manual run deploys; the daily run only deploys when discovery changed something
+    if: github.event_name != 'schedule' || needs.discover.outputs.changed == 'true'
+    needs: discover
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

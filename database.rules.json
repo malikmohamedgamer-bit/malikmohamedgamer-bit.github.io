@@ -1,0 +1,55 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "stats": {
+      ".read": true,
+      "$slug": {
+        ".validate": "$slug.matches(/^[a-z0-9][a-z0-9-]{0,39}$/)",
+        "plays": {
+          ".write": "auth != null && newData.exists() && $slug.matches(/^[a-z0-9][a-z0-9-]{0,39}$/)",
+          ".validate": "newData.isNumber() && ((!data.exists() && newData.val() == 1) || (data.exists() && newData.val() == data.val() + 1)) && (!root.child('lastPlay').child($slug).child(auth.uid).exists() || root.child('lastPlay').child($slug).child(auth.uid).val() < now - 1800000) && newData.parent().parent().parent().child('lastPlay').child($slug).child(auth.uid).val() == now"
+        },
+        "likes": {
+          ".write": "auth != null && newData.exists() && $slug.matches(/^[a-z0-9][a-z0-9-]{0,39}$/)",
+          ".validate": "newData.isNumber() && newData.val() >= 0 && ((((!data.exists() && newData.val() == 1) || (data.exists() && newData.val() == data.val() + 1)) && newData.parent().parent().parent().child('votes').child($slug).child(auth.uid).val() == 1 && root.child('votes').child($slug).child(auth.uid).val() != 1) || (data.exists() && newData.val() == data.val() - 1 && root.child('votes').child($slug).child(auth.uid).val() == 1 && newData.parent().parent().parent().child('votes').child($slug).child(auth.uid).val() != 1))"
+        },
+        "dislikes": {
+          ".write": "auth != null && newData.exists() && $slug.matches(/^[a-z0-9][a-z0-9-]{0,39}$/)",
+          ".validate": "newData.isNumber() && newData.val() >= 0 && ((((!data.exists() && newData.val() == 1) || (data.exists() && newData.val() == data.val() + 1)) && newData.parent().parent().parent().child('votes').child($slug).child(auth.uid).val() == -1 && root.child('votes').child($slug).child(auth.uid).val() != -1) || (data.exists() && newData.val() == data.val() - 1 && root.child('votes').child($slug).child(auth.uid).val() == -1 && newData.parent().parent().parent().child('votes').child($slug).child(auth.uid).val() != -1))"
+        },
+        "$other": { ".validate": false }
+      }
+    },
+    "votes": {
+      "$slug": {
+        ".validate": "$slug.matches(/^[a-z0-9][a-z0-9-]{0,39}$/)",
+        "$uid": {
+          ".read": "auth != null && auth.uid == $uid",
+          ".write": "auth != null && auth.uid == $uid && $slug.matches(/^[a-z0-9][a-z0-9-]{0,39}$/) && (((newData.val() == 1) == (data.val() == 1) && newData.parent().parent().parent().child('stats').child($slug).child('likes').val() == root.child('stats').child($slug).child('likes').val()) || ((newData.val() == 1) != (data.val() == 1) && newData.parent().parent().parent().child('stats').child($slug).child('likes').val() != root.child('stats').child($slug).child('likes').val())) && (((newData.val() == -1) == (data.val() == -1) && newData.parent().parent().parent().child('stats').child($slug).child('dislikes').val() == root.child('stats').child($slug).child('dislikes').val()) || ((newData.val() == -1) != (data.val() == -1) && newData.parent().parent().parent().child('stats').child($slug).child('dislikes').val() != root.child('stats').child($slug).child('dislikes').val()))",
+          ".validate": "newData.isNumber() && (newData.val() == 1 || newData.val() == -1)"
+        }
+      }
+    },
+    "presence": {
+      ".read": true,
+      "$slug": {
+        ".validate": "$slug.matches(/^[a-z0-9][a-z0-9-]{0,39}$/)",
+        "$uid": {
+          ".write": "auth != null && auth.uid == $uid && $slug.matches(/^[a-z0-9][a-z0-9-]{0,39}$/)",
+          ".validate": "newData.isNumber() && newData.val() == now"
+        }
+      }
+    },
+    "lastPlay": {
+      "$slug": {
+        ".validate": "$slug.matches(/^[a-z0-9][a-z0-9-]{0,39}$/)",
+        "$uid": {
+          ".read": "auth != null && auth.uid == $uid",
+          ".write": "auth != null && auth.uid == $uid && $slug.matches(/^[a-z0-9][a-z0-9-]{0,39}$/) && newData.exists() && ((!root.child('stats').child($slug).child('plays').exists() && newData.parent().parent().parent().child('stats').child($slug).child('plays').val() == 1) || (root.child('stats').child($slug).child('plays').exists() && newData.parent().parent().parent().child('stats').child($slug).child('plays').val() == root.child('stats').child($slug).child('plays').val() + 1))",
+          ".validate": "newData.isNumber() && newData.val() == now && (!data.exists() || data.val() < now - 1800000)"
+        }
+      }
+    }
+  }
+}

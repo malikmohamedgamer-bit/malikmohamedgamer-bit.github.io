@@ -1,0 +1,6 @@
+node_modules/
+tools/_scratch/
+tools/out/
+_site/
+.firebase/
+*.log
