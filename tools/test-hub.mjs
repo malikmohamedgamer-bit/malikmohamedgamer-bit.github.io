@@ -251,6 +251,8 @@ async function sdk() {
     const btn = await page.$('[data-game-hub]');
     check(`SDK loads (${standalone ? 'standalone' : 'browser tab'})`, loaded);
     check(`"← Hub" ${standalone ? `shown when standalone (${standalone})` : 'hidden in a browser tab'}`, standalone ? !!btn : !btn);
+    const marked = await page.evaluate(() => document.documentElement.hasAttribute('data-hub-app'));
+    check(`<html data-hub-app> ${standalone ? 'set' : 'not set'} (${standalone || 'tab'})`, marked === !!standalone);
     if (standalone === 'display-mode' && btn) {
       const shown = () => page.$eval('[data-game-hub]', (h) => getComputedStyle(h).display !== 'none');
       const box = await btn.boundingBox();
@@ -279,6 +281,20 @@ async function sdk() {
       check(`SDK records the play locally (${standalone ? 'standalone' : 'tab'})`, !!recent['bolt-skate']);
     }
     check(`no console errors on the game page (${standalone ? 'standalone' : 'tab'})`, errors.length === 0, errors.join(' | '));
+    await ctx.close();
+  }
+  { // data-hub-button="none": a game that shows its own link gets the marker but no floating button
+    const ctx = await newCtx({ width: 1280, height: 720 });
+    await ctx.route(/\/Skate-game\/(index\.html)?$/, async (r) => {
+      const res = await r.fetch();
+      r.fulfill({ response: res, body: (await res.text()).replace('<script src="/hub-sdk.js"', '<script src="/hub-sdk.js" data-hub-button="none"') });
+    });
+    const page = await ctx.newPage();
+    await page.addInitScript(() => { Object.defineProperty(Navigator.prototype, 'standalone', { get: () => true }); });
+    await page.goto(`${BASE}/Skate-game/`, { waitUntil: 'load' });
+    await page.waitForTimeout(3000);
+    const r = await page.evaluate(() => ({ tag: !!document.querySelector('script[src="/hub-sdk.js"][data-hub-button="none"]'), sdk: window.__gameHubSdk === true, marked: document.documentElement.hasAttribute('data-hub-app'), btn: !!document.querySelector('[data-game-hub]') }));
+    check('data-hub-button="none": marked as the app, no floating button', r.tag && r.sdk && r.marked && !r.btn, JSON.stringify(r));
     await ctx.close();
   }
   if (emulatorUp) { // an automated browser (navigator.webdriver) never counts

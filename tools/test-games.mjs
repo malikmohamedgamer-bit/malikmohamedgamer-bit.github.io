@@ -17,6 +17,8 @@ setBase(BASE);
 const PATHS = { riftkeep: 'TDS', rollforge: 'Tcyoon-RNG', 'bolt-skate': 'Skate-game', snapfire: 'fps-playtest' };
 // errors the game already logged before the hub work (none known), matched by substring
 const KNOWN = [];
+// games that show their own "← Hub" link (data-hub-button="none") instead of the SDK's floating button
+const OWN_LINK = { riftkeep: '[data-testid="game-hub"]' };
 
 let pass = 0, fail = 0;
 const check = (label, ok, extra = '') => { ok ? pass++ : fail++; console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${label}${extra ? ` (${extra})` : ''}`); };
@@ -43,7 +45,7 @@ for (const [slug, path] of Object.entries(PATHS)) {
     const r = await sdkRes;
     check('/hub-sdk.js loads (200)', !!r && r.status() === 200, r ? String(r.status()) : 'not requested');
     check('SDK ran', await page.evaluate(() => window.__gameHubSdk === true));
-    check('no "← Hub" button in a normal tab', !(await page.$('[data-game-hub]')));
+    check('no "← Hub" in a normal tab (not marked as the app, no button or link shown)', await page.evaluate((sel) => !document.documentElement.hasAttribute('data-hub-app') && !document.querySelector('[data-game-hub]') && !(sel && document.querySelector(sel)?.getClientRects().length), OWN_LINK[slug] || null));
     if (slug === 'snapfire') {
       await page.mouse.click(640, 360);
       await page.waitForTimeout(600);
@@ -64,9 +66,20 @@ for (const [slug, path] of Object.entries(PATHS)) {
     await ctx.addInitScript(() => { const mm = window.matchMedia.bind(window); window.matchMedia = (q) => (/display-mode:\s*standalone/.test(q) ? { matches: true, media: q, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} } : mm(q)); });
     const page = await ctx.newPage();
     await page.goto(`${BASE}/${path}/`, { waitUntil: 'load' });
-    const btn = await page.waitForSelector('[data-game-hub]', { timeout: 20000 }).catch(() => null);
-    check('"← Hub" appears in standalone mode', !!btn);
-    if (btn) await page.screenshot({ path: `tools/out/shots/standalone-${slug}.png` }).catch(() => {});
+    // the way back must be visible AND on top (a game's modal <dialog> menu would hide a floating button)
+    const sel = OWN_LINK[slug] || '[data-game-hub]';
+    const el = await page.waitForSelector(sel, { state: 'visible', timeout: 90000 }).catch(() => null);
+    if (el) await page.waitForTimeout(3000); // let the game's own start-up settle over it
+    const info = el ? await el.evaluate((n) => {
+      const r = n.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+      const a = n.matches('a') ? n : null;
+      return { onTop: !!hit && (hit === n || n.contains(hit)), inView: r.x >= 0 && r.y >= 0 && r.right <= innerWidth && r.bottom <= innerHeight, href: a ? a.href : '/', app: document.documentElement.hasAttribute('data-hub-app') };
+    }) : null;
+    check(`"← Hub" ${OWN_LINK[slug] ? 'link in the game\'s own menu' : 'button'} shows in standalone mode, in view and on top`, !!info && info.onTop && info.inView, JSON.stringify(info));
+    check('page marked data-hub-app in standalone mode', !!info && info.app);
+    if (OWN_LINK[slug]) check('no floating button when the game shows its own link', !(await page.$('[data-game-hub]')) && !!info && info.href === `${BASE}/`);
+    if (el) await page.screenshot({ path: `tools/out/shots/standalone-${slug}.png` }).catch(() => {});
     await ctx.close();
   }
 }

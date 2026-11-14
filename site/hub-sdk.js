@@ -1,6 +1,9 @@
 /*! Game Hub SDK — loaded by every game:  <script src="/hub-sdk.js" async></script>
  *  Optional attributes on that tag: data-hub-corner="top-left|top-right|bottom-left|bottom-right" (default top-left),
- *  data-hub-slug="my-game" (default: read from the game's own /<repo>/game.json).
+ *  data-hub-slug="my-game" (default: read from the game's own /<repo>/game.json),
+ *  data-hub-button="none" (no floating button: the game shows its own link to "/" instead, e.g. in its menu).
+ *  In the installed app the SDK sets <html data-hub-app>, so a game can show its own link with CSS:
+ *  .my-hub-link { display: none }  [data-hub-app] .my-hub-link { display: inline-flex }
  *  - counts a play at most once per 30 minutes per device per game
  *  - keeps presence while the game tab is open ("online" = in the game right now)
  *  - shows a small "← Hub" button only when running as an installed app (no browser back button there),
@@ -16,6 +19,7 @@
   var attr = function (n) { try { return script && script.getAttribute(n); } catch (e) { return null; } };
   var CORNERS = { 'top-left': 1, 'top-right': 1, 'bottom-left': 1, 'bottom-right': 1 };
   var corner = CORNERS[attr('data-hub-corner')] ? attr('data-hub-corner') : 'top-left';
+  var floating = attr('data-hub-button') !== 'none';
   var COOLDOWN = 30 * 60 * 1000;
 
   function store(k, d) { try { var v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }
@@ -29,7 +33,7 @@
 
   // ---------------------------------------------------------------- "← Hub" button (installed app only)
   function mountButton() {
-    if (!appMode() || !document.body) return;
+    if (!floating || !appMode() || !document.body) return;
     var host = document.createElement('div');
     host.setAttribute('data-game-hub', '');
     host.style.cssText = 'position:fixed;z-index:2147483646;pointer-events:none;' +
@@ -102,6 +106,7 @@
   }
 
   try {
+    if (appMode()) document.documentElement.setAttribute('data-hub-app', ''); // lets games show their own "back to hub" link
     if (document.readyState === 'complete') boot(); else addEventListener('load', boot, { once: true });
   } catch (e) { /* silent */ }
 })();

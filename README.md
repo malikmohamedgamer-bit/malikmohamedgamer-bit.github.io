@@ -89,7 +89,8 @@ One line in every game: `<script src="/hub-sdk.js" async></script>` (optional `d
 `data-hub-slug`). After the page's `load` event (+2.5 s) it reads the game's slug from `/<repo>/game.json`,
 marks the game in the hub's "Recently played", lazy-loads Firebase, keeps presence, and counts a play at most
 once per 30 minutes per device. Automated browsers (`navigator.webdriver`: crawlers, Playwright runs) never
-count as plays or presence. It shows a small "← Hub" button only in an installed app (`display-mode`
+count as plays or presence. In the installed app it sets `<html data-hub-app>`; with `data-hub-button="none"`
+the game shows its own "← Hub" link (Riftkeep does, because its menus are modal dialogs). Otherwise it shows a small "← Hub" button only in an installed app (`display-mode`
 standalone/fullscreen/minimal-ui or `navigator.standalone`), hides it during pointer lock and fullscreen, and
 stops pointer events on it from reaching the game. Every step is wrapped and fails silently.
 

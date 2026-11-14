@@ -66,7 +66,12 @@ edit the source and confirm the Pages deploy actually updated.
    ```
    Optional: `data-hub-corner="top-left|top-right|bottom-left|bottom-right"` for the "← Hub" button (pick the
    corner the game's HUD leaves free). The SDK counts plays, keeps presence, and only shows "← Hub" in the
-   installed app. If the game's own dev server or tests forbid absolute paths or 404s, serve a no-op
+   installed app. Check the button is visible and tappable in the game's menus and during play at phone size:
+   if the menu is a modal `<dialog>` (`showModal()`), nothing outside it can show above it or be tapped, and if
+   every corner is busy, use `data-hub-button="none"` and put a "← Hub" link to `/` in the game's own menu,
+   shown only in the app with CSS (`.hub-back { display: none }  [data-hub-app] .hub-back { display: inline-flex }`;
+   the SDK sets `<html data-hub-app>` there). Don't let it take the menu's initial focus (Riftkeep's
+   `src/ui/hub.js` is the example). If the game's own dev server or tests forbid absolute paths or 404s, serve a no-op
    `/hub-sdk.js` from the dev server (see Riftkeep's `tools/dev-server.mjs`). If the game has its own service
    worker, make it ignore URLs outside its scope (`if (!url.href.startsWith(self.registration.scope)) return;`)
    so the hub's shared files are never cached by the game.
