@@ -11,13 +11,13 @@ const args = process.argv.slice(2);
 const outIdx = args.indexOf('--out');
 const out = outIdx >= 0 ? args[outIdx + 1] : join(root, 'tools', 'out', 'banners');
 const only = args.filter((a, i) => !a.startsWith('--') && !(outIdx >= 0 && i === outIdx + 1));
-const BASE = process.env.HUB_BASE || 'https://malikmohamedgamer-bit.github.io';
-mkdirSync(out, { recursive: true });
+let BASE = process.env.HUB_BASE || 'https://malikmohamedgamer-bit.github.io';
+export const setBase = (b) => { BASE = b; };
 
 const wait = (p, ms) => p.waitForTimeout(ms);
 const hold = async (p, key, ms) => { await p.keyboard.down(key); await wait(p, ms); await p.keyboard.up(key); };
 
-const FLOWS = {
+export const FLOWS = {
   async riftkeep(p) {
     await p.goto(`${BASE}/TDS/`, { waitUntil: 'load' });
     await p.getByTestId('lobby').waitFor({ timeout: 90000 });
@@ -79,20 +79,23 @@ const FLOWS = {
   },
 };
 
-const browser = await chromium.launch({ channel: 'msedge', args: ['--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'] });
-for (const [slug, flow] of Object.entries(FLOWS)) {
-  if (only.length && !only.includes(slug)) continue;
-  const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
-  const errors = [];
-  page.on('pageerror', (e) => errors.push(e.message));
-  try {
-    await flow(page);
-    await page.screenshot({ path: join(out, `${slug}.jpg`), type: 'jpeg', quality: 85 });
-    console.log(`${slug}: saved${errors.length ? ` (page errors: ${errors.join(' / ')})` : ''}`);
-  } catch (e) {
-    await page.screenshot({ path: join(out, `${slug}-failed.png`) }).catch(() => {});
-    console.log(`${slug}: FAILED ${e.message}`);
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  mkdirSync(out, { recursive: true });
+  const browser = await chromium.launch({ channel: 'msedge', args: ['--ignore-gpu-blocklist', '--enable-unsafe-swiftshader'] });
+  for (const [slug, flow] of Object.entries(FLOWS)) {
+    if (only.length && !only.includes(slug)) continue;
+    const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    try {
+      await flow(page);
+      await page.screenshot({ path: join(out, `${slug}.jpg`), type: 'jpeg', quality: 85 });
+      console.log(`${slug}: saved${errors.length ? ` (page errors: ${errors.join(' / ')})` : ''}`);
+    } catch (e) {
+      await page.screenshot({ path: join(out, `${slug}-failed.png`) }).catch(() => {});
+      console.log(`${slug}: FAILED ${e.message}`);
+    }
+    await page.close();
   }
-  await page.close();
+  await browser.close();
 }
-await browser.close();
